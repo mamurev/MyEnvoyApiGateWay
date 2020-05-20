@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option csharp_namespace = "ApiSecond.Proto";
+
+package ApiSecond;
+
+service Weather{
+	rpc Get(WeatherRequest) returns (WeatherItemResponseMultiple) {} 
+}
+
+message WeatherRequest{}
+message WeatherItemResponseMultiple{
+repeated WeatherItemResponse items=1;
+}
+
+message WeatherItemResponse {
+	int32  Date = 1;
+	int32 TemperatureC = 2;
+	int32 TemperatureF = 3;
+	string Summary = 4;
+}
