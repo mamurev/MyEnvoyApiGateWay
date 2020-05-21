@@ -20,7 +20,7 @@
     "ApiSecond": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "weatherforecast",
+      "launchUrl": "weather",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

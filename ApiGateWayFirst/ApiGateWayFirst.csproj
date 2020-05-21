@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <Protobuf Include="..\ApiSecond\Proto\WeatherForecast.proto" GrpcServices="Client" />
+	<Protobuf Include="..\ApiFirst\Proto\WeatherFirst.proto" GrpcServices="Client" />
   </ItemGroup>
 
 

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 //using ApiSecond.Proto;
 using Grpc.Net.Client;
 using ApiSecond.Proto;
+using ApiFirst.Proto;
 
 namespace ApiGateWayFirst.Services
 {
@@ -27,34 +28,43 @@ namespace ApiGateWayFirst.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<WeatherDataItem>> Get()
+        public async Task<IEnumerable<WeatherDataItem>> GetSecond()
         {
             return await GrpcCallerService.CallService(_urls.WeatherSecond, async httpClient =>
             {
                 var channel = GrpcChannel.ForAddress(_urls.WeatherSecond);
                 var client = new Weather.WeatherClient(channel);
                 _logger.LogDebug("grpc client created, request");
-                var response = await client.GetAsync(new WeatherRequest());
+                var response = await client.GetAsync(new ApiSecond.Proto.WeatherRequest());
                 _logger.LogDebug("grpc response {@response}", response);
 
                 return MapToWeatherData(response);
             });
         }
 
-        public async Task<IEnumerable<WeatherDataItem>> Get2()
+        public async Task<IEnumerable<WeatherDataItem>> GetFirst()
         {
-            var httpClientHandler = new HttpClientHandler();
-            //httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            var httpClient = new HttpClient(httpClientHandler);
+            return await GrpcCallerService.CallService(_urls.WeatherFirst, async httpClient =>
+            {
+                var channel = GrpcChannel.ForAddress(_urls.WeatherFirst);
+                var client = new WeatherFirst.WeatherFirstClient(channel);
+                _logger.LogDebug("grpc client created, request");
+                var response = await client.GetAsync(new ApiFirst.Proto.WeatherRequest());
+                _logger.LogDebug("grpc response {@response}", response);
 
-            var channel = GrpcChannel.ForAddress(_urls.WeatherSecond);//, new GrpcChannelOptions { HttpClient = httpClient });
-            var client = new Weather.WeatherClient(channel);
-            var response = await client.GetAsync(new WeatherRequest());
-            return MapToWeatherData(response);
+                return MapToWeatherData(response);
+            });
         }
 
+        public async Task<IEnumerable<WeatherDataItem>> Get()
+        {
+            var resultFirst= await GetFirst();
+            var resultSecond = await GetSecond();
 
-        private List<WeatherDataItem> MapToWeatherData(WeatherItemResponseMultiple weatherResponse)
+            return resultFirst.Concat(resultSecond);
+        }
+
+        private List<WeatherDataItem> MapToWeatherData(ApiSecond.Proto.WeatherItemResponseMultiple weatherResponse)
         {
             if (weatherResponse == null)
             {
@@ -65,7 +75,27 @@ namespace ApiGateWayFirst.Services
 
             weatherResponse.Items.ToList().ForEach(item => map.Items.Add(new WeatherDataItem
             {
-                Date = DateTime.Now, //.AddDays(item.Date)
+                Date = DateTime.Now.AddTicks(item.Date),
+                Summary = item.Summary,
+                TemperatureC = item.TemperatureC,
+                TemperatureF = item.TemperatureF
+            }));
+
+            return map.Items;
+        }
+
+        private List<WeatherDataItem> MapToWeatherData(ApiFirst.Proto.WeatherItemResponseMultiple weatherResponse)
+        {
+            if (weatherResponse == null)
+            {
+                return null;
+            }
+
+            var map = new WeatherData();
+
+            weatherResponse.Items.ToList().ForEach(item => map.Items.Add(new WeatherDataItem
+            {
+                Date = DateTime.Now.AddTicks(item.Date),
                 Summary = item.Summary,
                 TemperatureC = item.TemperatureC,
                 TemperatureF = item.TemperatureF
